@@ -32,6 +32,24 @@ export const TOOLS = [
     },
   },
   {
+    name: "web_map",
+    title: "Site map",
+    description:
+      "List public URLs on a domain through Firecrawl Map. Same 0.005 cover as scrape. Optional search filters the link set.",
+    path: "/api/v1/proxy/map",
+    method: "POST",
+    price: { amount: "0.005", currency: "XRP", or: { amount: "0.005", currency: "RLUSD" } },
+    inputSchema: {
+      type: "object",
+      required: ["url"],
+      properties: {
+        url: { type: "string", format: "uri", description: "Site root to map, e.g. https://example.com" },
+        search: { type: "string", description: "Optional text to filter discovered links." },
+        limit: { type: "integer", minimum: 1, maximum: 5000, default: 100 },
+      },
+    },
+  },
+  {
     name: "market_quote",
     title: "Market quote",
     description:

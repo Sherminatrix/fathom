@@ -146,9 +146,61 @@ export async function handleQuote(body) {
   return response.data;
 }
 
+function mockMap(url) {
+  return {
+    success: true,
+    provider: "fathom-mock",
+    links: [url, `${url.replace(/\/$/, "")}/about`],
+  };
+}
+
+function mapTargetUrl() {
+  if (process.env.TARGET_MAP_API_URL) return process.env.TARGET_MAP_API_URL;
+  const scrape = process.env.TARGET_SCRAPE_API_URL || "";
+  if (/firecrawl\.dev/i.test(scrape) || process.env.ORIGINAL_PROVIDER_API_KEY) {
+    return "https://api.firecrawl.dev/v2/map";
+  }
+  if (scrape.includes("/scrape")) return scrape.replace(/\/scrape\/?$/, "/map");
+  return "";
+}
+
+/**
+ * Firecrawl Map: list public URLs on a site. Same master key as scrape.
+ */
+export async function handleMap(body) {
+  const url = assertPublicHttpUrl(body?.url);
+  const limit = Math.min(Math.max(Number(body?.limit) || 100, 1), 5000);
+  const payload = { url, limit };
+  if (body?.search) payload.search = String(body.search);
+
+  const target = mapTargetUrl();
+  const key = process.env.ORIGINAL_PROVIDER_API_KEY;
+  if (!target || !key) return mockMap(url);
+
+  const response = await axios.post(target, payload, {
+    headers: providerHeaders(),
+    timeout: 45_000,
+    validateStatus: () => true,
+    maxRedirects: 0,
+  });
+
+  if (response.status >= 400) {
+    const err = new Error("Upstream map provider rejected the request");
+    err.status = 502;
+    err.upstreamStatus = response.status;
+    throw err;
+  }
+  return response.data;
+}
+
 export const scrapeUsage = {
   error: "Send POST with JSON { url, formats? } and XRPL payment headers.",
   path: "/api/v1/proxy/scrape",
+};
+
+export const mapUsage = {
+  error: "Send POST with JSON { url, search?, limit? } and XRPL payment headers.",
+  path: "/api/v1/proxy/map",
 };
 
 export const quoteUsage = {
@@ -172,6 +224,16 @@ export function proxyRouter() {
   router.post("/scrape", async (req, res) => {
     try {
       const data = await handleScrape(req.body || {});
+      res.json(data);
+    } catch (err) {
+      sendProxyError(res, err);
+    }
+  });
+
+  router.get("/map", (_req, res) => res.status(405).json(mapUsage));
+  router.post("/map", async (req, res) => {
+    try {
+      const data = await handleMap(req.body || {});
       res.json(data);
     } catch (err) {
       sendProxyError(res, err);

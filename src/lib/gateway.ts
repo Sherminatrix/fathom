@@ -1,7 +1,7 @@
 import { getTreasuryStatus, verifyXrplPayment } from "../../middleware/xrplPayment.js";
 import { listSettlements } from "../../lib/settlements.js";
 import { buildMcpSchema, getHealth, listCatalog } from "../../routes/mcp.js";
-import { handleQuote, handleScrape, quoteUsage, scrapeUsage } from "../../routes/proxy.js";
+import { handleMap, handleQuote, handleScrape, mapUsage, quoteUsage, scrapeUsage } from "../../routes/proxy.js";
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -39,4 +39,4 @@ export async function requirePayment(request: Request) {
   >;
 }
 
-export { buildMcpSchema, getHealth, getTreasuryStatus, handleQuote, handleScrape, listCatalog, listSettlements, quoteUsage, scrapeUsage };
+export { buildMcpSchema, getHealth, getTreasuryStatus, handleMap, handleQuote, handleScrape, listCatalog, listSettlements, mapUsage, quoteUsage, scrapeUsage };

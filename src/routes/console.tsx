@@ -16,7 +16,7 @@ type Health = {
   minFee?: { xrp: string };
 };
 
-type ToolId = "scrape" | "quote";
+type ToolId = "scrape" | "map" | "quote";
 
 function ConsolePage() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -51,8 +51,9 @@ function ConsolePage() {
     setResult("");
     setStatus(null);
     try {
-      const path = tool === "scrape" ? "/api/v1/proxy/scrape" : "/api/v1/proxy/quote";
-      const body = tool === "scrape" ? { url, formats: ["markdown"] } : { symbol };
+      const path =
+        tool === "scrape" ? "/api/v1/proxy/scrape" : tool === "map" ? "/api/v1/proxy/map" : "/api/v1/proxy/quote";
+      const body = tool === "quote" ? { symbol } : { url, ...(tool === "map" ? { limit: 100 } : { formats: ["markdown"] }) };
       const res = await fetch(path, {
         method: "POST",
         headers: {
@@ -96,6 +97,7 @@ function ConsolePage() {
               {(
                 [
                   ["scrape", "Scrape"],
+                  ["map", "Map"],
                   ["quote", "Quote"],
                 ] as const
               ).map(([id, label]) => (
@@ -114,11 +116,11 @@ function ConsolePage() {
             </div>
 
             <label className="mt-5 block text-xs font-medium text-muted">
-              {tool === "scrape" ? "URL" : "Symbol"}
-              {tool === "scrape" ? (
-                <Input className="mt-2" value={url} onChange={(e) => setUrl(e.target.value)} />
-              ) : (
+              {tool === "quote" ? "Symbol" : "URL"}
+              {tool === "quote" ? (
                 <Input className="mt-2" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+              ) : (
+                <Input className="mt-2" value={url} onChange={(e) => setUrl(e.target.value)} />
               )}
             </label>
 

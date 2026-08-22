@@ -23,6 +23,7 @@ import { Route as ApiV1CatalogRouteImport } from './routes/api/v1/catalog'
 import { Route as ApiV1HealthRouteImport } from './routes/api/v1/health'
 import { Route as ApiV1SettlementsRouteImport } from './routes/api/v1/settlements'
 import { Route as ApiV1TreasuryRouteImport } from './routes/api/v1/treasury'
+import { Route as ApiV1ProxyMapRouteImport } from './routes/api/v1/proxy/map'
 import { Route as ApiV1ProxyQuoteRouteImport } from './routes/api/v1/proxy/quote'
 import { Route as ApiV1ProxyScrapeRouteImport } from './routes/api/v1/proxy/scrape'
 
@@ -96,6 +97,11 @@ const ApiV1TreasuryRoute = ApiV1TreasuryRouteImport.update({
   path: '/api/v1/treasury',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1ProxyMapRoute = ApiV1ProxyMapRouteImport.update({
+  id: '/api/v1/proxy/map',
+  path: '/api/v1/proxy/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ProxyQuoteRoute = ApiV1ProxyQuoteRouteImport.update({
   id: '/api/v1/proxy/quote',
   path: '/api/v1/proxy/quote',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
+  '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
+  '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
+  '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
+    | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
+    | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
+    | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
   fileRoutesById: FileRoutesById
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   ApiV1HealthRoute: typeof ApiV1HealthRoute
   ApiV1SettlementsRoute: typeof ApiV1SettlementsRoute
   ApiV1TreasuryRoute: typeof ApiV1TreasuryRoute
+  ApiV1ProxyMapRoute: typeof ApiV1ProxyMapRoute
   ApiV1ProxyQuoteRoute: typeof ApiV1ProxyQuoteRoute
   ApiV1ProxyScrapeRoute: typeof ApiV1ProxyScrapeRoute
 }
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1TreasuryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/proxy/map': {
+      id: '/api/v1/proxy/map'
+      path: '/api/v1/proxy/map'
+      fullPath: '/api/v1/proxy/map'
+      preLoaderRoute: typeof ApiV1ProxyMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/proxy/quote': {
       id: '/api/v1/proxy/quote'
       path: '/api/v1/proxy/quote'
@@ -378,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1HealthRoute: ApiV1HealthRoute,
   ApiV1SettlementsRoute: ApiV1SettlementsRoute,
   ApiV1TreasuryRoute: ApiV1TreasuryRoute,
+  ApiV1ProxyMapRoute: ApiV1ProxyMapRoute,
   ApiV1ProxyQuoteRoute: ApiV1ProxyQuoteRoute,
   ApiV1ProxyScrapeRoute: ApiV1ProxyScrapeRoute,
 }

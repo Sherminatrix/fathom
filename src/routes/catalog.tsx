@@ -14,6 +14,13 @@ const TOOLS = [
     fields: "url, formats[]",
   },
   {
+    name: "web_map",
+    path: "/api/v1/proxy/map",
+    title: "Site map",
+    summary: "List public URLs on a domain via Firecrawl Map.",
+    fields: "url, search?, limit?",
+  },
+  {
     name: "market_quote",
     path: "/api/v1/proxy/quote",
     title: "Market quote",
@@ -27,7 +34,7 @@ function CatalogPage() {
     <SiteShell>
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         <Badge>Catalog</Badge>
-        <h1 className="font-display mt-4 text-4xl tracking-tight sm:text-5xl">Two tools. One price.</h1>
+        <h1 className="font-display mt-4 text-4xl tracking-tight sm:text-5xl">Three tools. One price.</h1>
         <p className="mt-4 max-w-xl text-muted">
           Every call costs 0.005 XRP or 0.005 RLUSD, verified on mainnet before the upstream request is made.
         </p>

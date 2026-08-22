@@ -1,0 +1,27 @@
+# Fathom on Render — one web service, Node 22.
+# Dashboard: New Blueprint → this file, or New Web Service with the same commands.
+# Add a Postgres instance and paste its Internal URL into DATABASE_URL.
+
+services:
+  - type: web
+    name: fathom
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node .output/server/index.mjs
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NITRO_PRESET
+        value: node-server
+      - key: ALLOW_DEMO_PAYMENTS
+        value: "false"
+      - key: PLATFORM_XRPL_WALLET_ADDRESS
+        value: rkpckEddjHhS2vvg7sR3Gb3BX3CVzE2kb
+      - key: TARGET_SCRAPE_API_URL
+        value: https://api.firecrawl.dev/v1/scrape
+      - key: ORIGINAL_PROVIDER_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false

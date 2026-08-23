@@ -5,7 +5,7 @@ export const Route = createFileRoute("/.well-known/mcp")({
   server: {
     handlers: {
       OPTIONS: () => corsPreflight(),
-      GET: () => jsonResponse(buildMcpSchema()),
+      GET: async () => jsonResponse(await buildMcpSchema()),
     },
   },
 });

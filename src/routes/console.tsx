@@ -16,13 +16,14 @@ type Health = {
   minFee?: { xrp: string };
 };
 
-type ToolId = "scrape" | "map" | "quote";
+type ToolId = "scrape" | "map" | "search" | "quote";
 
 function ConsolePage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [tool, setTool] = useState<ToolId>("scrape");
   const [url, setUrl] = useState("https://example.com");
   const [symbol, setSymbol] = useState("XRP");
+  const [query, setQuery] = useState("XRP ledger");
   const [txHash, setTxHash] = useState("demo");
   const [sender, setSender] = useState("rFathomDemoAgent");
   const [busy, setBusy] = useState(false);
@@ -52,8 +53,21 @@ function ConsolePage() {
     setStatus(null);
     try {
       const path =
-        tool === "scrape" ? "/api/v1/proxy/scrape" : tool === "map" ? "/api/v1/proxy/map" : "/api/v1/proxy/quote";
-      const body = tool === "quote" ? { symbol } : { url, ...(tool === "map" ? { limit: 100 } : { formats: ["markdown"] }) };
+        tool === "scrape"
+          ? "/api/v1/proxy/scrape"
+          : tool === "map"
+            ? "/api/v1/proxy/map"
+            : tool === "search"
+              ? "/api/v1/proxy/search"
+              : "/api/v1/proxy/quote";
+      const body =
+        tool === "quote"
+          ? { symbol }
+          : tool === "search"
+            ? { query, limit: 10 }
+            : tool === "map"
+              ? { url, limit: 10 }
+              : { url, formats: ["markdown"] };
       const res = await fetch(path, {
         method: "POST",
         headers: {
@@ -97,6 +111,7 @@ function ConsolePage() {
               {(
                 [
                   ["scrape", "Scrape"],
+                  ["search", "Search"],
                   ["map", "Map"],
                   ["quote", "Quote"],
                 ] as const
@@ -116,9 +131,11 @@ function ConsolePage() {
             </div>
 
             <label className="mt-5 block text-xs font-medium text-muted">
-              {tool === "quote" ? "Symbol" : "URL"}
+              {tool === "quote" ? "Symbol" : tool === "search" ? "Query" : "URL"}
               {tool === "quote" ? (
                 <Input className="mt-2" value={symbol} onChange={(e) => setSymbol(e.target.value)} />
+              ) : tool === "search" ? (
+                <Input className="mt-2" value={query} onChange={(e) => setQuery(e.target.value)} />
               ) : (
                 <Input className="mt-2" value={url} onChange={(e) => setUrl(e.target.value)} />
               )}
@@ -135,7 +152,7 @@ function ConsolePage() {
             </label>
 
             <p className="mt-4 break-all font-mono text-micro text-subtle">
-              Xaman {health?.destination || MARKET.treasury} · min {health?.minFee?.xrp || MARKET.minXrp} XRP
+              Xaman {health?.destination || MARKET.treasury} · USD floor, live XRP · GET /api/v1/economics
             </p>
 
             <Button type="submit" className="mt-5 w-full" disabled={busy}>

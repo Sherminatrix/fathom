@@ -10,7 +10,7 @@ function IntegratePage() {
   const pay = `Payment {
   Account: rYourAgentWallet,
   Destination: ${MARKET.treasury},
-  Amount: "5000",          // drops = 0.005 XRP
+  Amount: "<live drops from GET /api/v1/economics>",
   TransactionType: "Payment"
 }`;
 
@@ -33,7 +33,7 @@ function IntegratePage() {
           <p className="font-mono text-micro text-subtle">Treasury · Xaman</p>
           <p className="mt-2 break-all font-mono text-sm text-fg">{MARKET.treasury}</p>
           <p className="mt-2 text-sm text-muted">
-            Pay 0.005 XRP (5,000 drops) to this classic address. No destination tag required.
+            Pay the live XRP cover (GET /api/v1/economics) or the USD floor in RLUSD. No destination tag.
           </p>
         </div>
 

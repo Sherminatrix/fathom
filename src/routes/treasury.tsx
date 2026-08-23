@@ -127,7 +127,7 @@ function TreasuryPage() {
         ) : (
           <p className="mt-8 inline-flex h-11 items-center gap-2 font-medium">
             <Check className="size-4" strokeWidth={1.75} />
-            This treasury can receive 0.005 RLUSD from agents.
+            This treasury can receive RLUSD from agents at each tool's cover.
           </p>
         )}
 

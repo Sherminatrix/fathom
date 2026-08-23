@@ -11,7 +11,7 @@ const STEPS = [
   {
     n: "01",
     title: "Pay the cover",
-    body: "The agent submits 0.005 XRP or RLUSD to the treasury address on XRPL Mainnet and waits for tesSUCCESS.",
+    body: "The agent submits the tool's cover in XRP or RLUSD to the treasury address on XRPL Mainnet and waits for tesSUCCESS.",
   },
   {
     n: "02",
@@ -31,7 +31,7 @@ function Home() {
       <section className="bg-rail border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <div className="stagger-in max-w-3xl">
-            <Badge>XRPL Mainnet · 0.005 XRP / call</Badge>
+            <Badge>XRPL Mainnet · USD floors, paid in XRP</Badge>
             <h1 className="font-display mt-6 text-4xl leading-[1.1] tracking-[-0.03em] sm:text-6xl">
               APIs with a cover charge, paid in drops.
             </h1>
@@ -58,7 +58,7 @@ function Home() {
       <section className="border-b border-border">
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-border sm:grid-cols-4">
           {[
-            ["0.005", "XRP minimum"],
+            ["$0.02", "scrape floor"],
             ["tesSUCCESS", "required on-ledger"],
             ["Once", "per transaction hash"],
             ["MCP", "schema for agents"],
@@ -108,7 +108,7 @@ function Home() {
                 {
                   icon: Wallet,
                   title: "XRP or RLUSD",
-                  body: "5,000 drops of XRP, or 0.005 RLUSD, paid to your Xaman treasury on mainnet.",
+                  body: "USD floor per tool (scrape $0.02, search $0.03, map $0.12, quote $0.01), paid in live XRP drops or RLUSD.",
                 },
               ].map((item) => (
                 <li key={item.title} className="flex gap-3">

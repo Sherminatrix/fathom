@@ -8,6 +8,7 @@
 
 import axios from "axios";
 import { Router } from "express";
+import { TOOL_PRICES } from "../lib/pricing.js";
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -169,7 +170,8 @@ function mapTargetUrl() {
  */
 export async function handleMap(body) {
   const url = assertPublicHttpUrl(body?.url);
-  const limit = Math.min(Math.max(Number(body?.limit) || 100, 1), 5000);
+  const cap = TOOL_PRICES.map.maxLimit || 10;
+  const limit = Math.min(Math.max(Number(body?.limit) || cap, 1), cap);
   const payload = { url, limit };
   if (body?.search) payload.search = String(body.search);
 
@@ -193,6 +195,54 @@ export async function handleMap(body) {
   return response.data;
 }
 
+function mockSearch(query) {
+  return {
+    success: true,
+    provider: "fathom-mock",
+    data: {
+      web: [
+        {
+          url: "https://example.com/",
+          title: `Mock result for ${query}`,
+          description: "Configure ORIGINAL_PROVIDER_API_KEY to use Firecrawl Search.",
+        },
+      ],
+    },
+  };
+}
+
+export async function handleSearch(body) {
+  const query = String(body?.query || body?.q || "").trim();
+  if (!query) {
+    const err = new Error("query is required");
+    err.status = 400;
+    throw err;
+  }
+  const cap = TOOL_PRICES.search.maxLimit || 10;
+  const limit = Math.min(Math.max(Number(body?.limit) || cap, 1), cap);
+  const key = process.env.ORIGINAL_PROVIDER_API_KEY;
+  const target = process.env.TARGET_SEARCH_API_URL || "https://api.firecrawl.dev/v2/search";
+  if (!key) return mockSearch(query);
+
+  const response = await axios.post(
+    target,
+    { query, limit, sources: ["web"] },
+    {
+      headers: providerHeaders(),
+      timeout: 45_000,
+      validateStatus: () => true,
+      maxRedirects: 0,
+    },
+  );
+  if (response.status >= 400) {
+    const err = new Error("Upstream search provider rejected the request");
+    err.status = 502;
+    err.upstreamStatus = response.status;
+    throw err;
+  }
+  return response.data;
+}
+
 export const scrapeUsage = {
   error: "Send POST with JSON { url, formats? } and XRPL payment headers.",
   path: "/api/v1/proxy/scrape",
@@ -201,6 +251,11 @@ export const scrapeUsage = {
 export const mapUsage = {
   error: "Send POST with JSON { url, search?, limit? } and XRPL payment headers.",
   path: "/api/v1/proxy/map",
+};
+
+export const searchUsage = {
+  error: "Send POST with JSON { query, limit? } and XRPL payment headers.",
+  path: "/api/v1/proxy/search",
 };
 
 export const quoteUsage = {
@@ -234,6 +289,16 @@ export function proxyRouter() {
   router.post("/map", async (req, res) => {
     try {
       const data = await handleMap(req.body || {});
+      res.json(data);
+    } catch (err) {
+      sendProxyError(res, err);
+    }
+  });
+
+  router.get("/search", (_req, res) => res.status(405).json(searchUsage));
+  router.post("/search", async (req, res) => {
+    try {
+      const data = await handleSearch(req.body || {});
       res.json(data);
     } catch (err) {
       sendProxyError(res, err);

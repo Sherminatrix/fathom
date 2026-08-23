@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as ConsoleRouteImport } from './routes/console'
+import { Route as CoverRouteImport } from './routes/cover'
 import { Route as DeployRouteImport } from './routes/deploy'
 import { Route as IntegrateRouteImport } from './routes/integrate'
 import { Route as LedgerRouteImport } from './routes/ledger'
@@ -20,12 +21,14 @@ import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as DotwellKnownMcpRouteImport } from './routes/[.]well-known/mcp'
 import { Route as McpSchemaRouteImport } from './routes/mcp.schema'
 import { Route as ApiV1CatalogRouteImport } from './routes/api/v1/catalog'
+import { Route as ApiV1EconomicsRouteImport } from './routes/api/v1/economics'
 import { Route as ApiV1HealthRouteImport } from './routes/api/v1/health'
 import { Route as ApiV1SettlementsRouteImport } from './routes/api/v1/settlements'
 import { Route as ApiV1TreasuryRouteImport } from './routes/api/v1/treasury'
 import { Route as ApiV1ProxyMapRouteImport } from './routes/api/v1/proxy/map'
 import { Route as ApiV1ProxyQuoteRouteImport } from './routes/api/v1/proxy/quote'
 import { Route as ApiV1ProxyScrapeRouteImport } from './routes/api/v1/proxy/scrape'
+import { Route as ApiV1ProxySearchRouteImport } from './routes/api/v1/proxy/search'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +43,11 @@ const CatalogRoute = CatalogRouteImport.update({
 const ConsoleRoute = ConsoleRouteImport.update({
   id: '/console',
   path: '/console',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoverRoute = CoverRouteImport.update({
+  id: '/cover',
+  path: '/cover',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeployRoute = DeployRouteImport.update({
@@ -82,6 +90,11 @@ const ApiV1CatalogRoute = ApiV1CatalogRouteImport.update({
   path: '/api/v1/catalog',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1EconomicsRoute = ApiV1EconomicsRouteImport.update({
+  id: '/api/v1/economics',
+  path: '/api/v1/economics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1HealthRoute = ApiV1HealthRouteImport.update({
   id: '/api/v1/health',
   path: '/api/v1/health',
@@ -112,11 +125,17 @@ const ApiV1ProxyScrapeRoute = ApiV1ProxyScrapeRouteImport.update({
   path: '/api/v1/proxy/scrape',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1ProxySearchRoute = ApiV1ProxySearchRouteImport.update({
+  id: '/api/v1/proxy/search',
+  path: '/api/v1/proxy/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
+  '/cover': typeof CoverRoute
   '/deploy': typeof DeployRoute
   '/integrate': typeof IntegrateRoute
   '/ledger': typeof LedgerRoute
@@ -125,17 +144,20 @@ export interface FileRoutesByFullPath {
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/economics': typeof ApiV1EconomicsRoute
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
   '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
+  '/api/v1/proxy/search': typeof ApiV1ProxySearchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
+  '/cover': typeof CoverRoute
   '/deploy': typeof DeployRoute
   '/integrate': typeof IntegrateRoute
   '/ledger': typeof LedgerRoute
@@ -144,18 +166,21 @@ export interface FileRoutesByTo {
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/economics': typeof ApiV1EconomicsRoute
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
   '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
+  '/api/v1/proxy/search': typeof ApiV1ProxySearchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/catalog': typeof CatalogRoute
   '/console': typeof ConsoleRoute
+  '/cover': typeof CoverRoute
   '/deploy': typeof DeployRoute
   '/integrate': typeof IntegrateRoute
   '/ledger': typeof LedgerRoute
@@ -164,12 +189,14 @@ export interface FileRoutesById {
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
+  '/api/v1/economics': typeof ApiV1EconomicsRoute
   '/api/v1/health': typeof ApiV1HealthRoute
   '/api/v1/settlements': typeof ApiV1SettlementsRoute
   '/api/v1/treasury': typeof ApiV1TreasuryRoute
   '/api/v1/proxy/map': typeof ApiV1ProxyMapRoute
   '/api/v1/proxy/quote': typeof ApiV1ProxyQuoteRoute
   '/api/v1/proxy/scrape': typeof ApiV1ProxyScrapeRoute
+  '/api/v1/proxy/search': typeof ApiV1ProxySearchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -177,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/catalog'
     | '/console'
+    | '/cover'
     | '/deploy'
     | '/integrate'
     | '/ledger'
@@ -185,17 +213,20 @@ export interface FileRouteTypes {
     | '/.well-known/mcp'
     | '/mcp/schema'
     | '/api/v1/catalog'
+    | '/api/v1/economics'
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
     | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
+    | '/api/v1/proxy/search'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/catalog'
     | '/console'
+    | '/cover'
     | '/deploy'
     | '/integrate'
     | '/ledger'
@@ -204,17 +235,20 @@ export interface FileRouteTypes {
     | '/.well-known/mcp'
     | '/mcp/schema'
     | '/api/v1/catalog'
+    | '/api/v1/economics'
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
     | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
+    | '/api/v1/proxy/search'
   id:
     | '__root__'
     | '/'
     | '/catalog'
     | '/console'
+    | '/cover'
     | '/deploy'
     | '/integrate'
     | '/ledger'
@@ -223,18 +257,21 @@ export interface FileRouteTypes {
     | '/.well-known/mcp'
     | '/mcp/schema'
     | '/api/v1/catalog'
+    | '/api/v1/economics'
     | '/api/v1/health'
     | '/api/v1/settlements'
     | '/api/v1/treasury'
     | '/api/v1/proxy/map'
     | '/api/v1/proxy/quote'
     | '/api/v1/proxy/scrape'
+    | '/api/v1/proxy/search'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CatalogRoute: typeof CatalogRoute
   ConsoleRoute: typeof ConsoleRoute
+  CoverRoute: typeof CoverRoute
   DeployRoute: typeof DeployRoute
   IntegrateRoute: typeof IntegrateRoute
   LedgerRoute: typeof LedgerRoute
@@ -242,12 +279,14 @@ export interface RootRouteChildren {
   TreasuryRoute: typeof TreasuryRoute
   DotwellKnownMcpRoute: typeof DotwellKnownMcpRoute
   ApiV1CatalogRoute: typeof ApiV1CatalogRoute
+  ApiV1EconomicsRoute: typeof ApiV1EconomicsRoute
   ApiV1HealthRoute: typeof ApiV1HealthRoute
   ApiV1SettlementsRoute: typeof ApiV1SettlementsRoute
   ApiV1TreasuryRoute: typeof ApiV1TreasuryRoute
   ApiV1ProxyMapRoute: typeof ApiV1ProxyMapRoute
   ApiV1ProxyQuoteRoute: typeof ApiV1ProxyQuoteRoute
   ApiV1ProxyScrapeRoute: typeof ApiV1ProxyScrapeRoute
+  ApiV1ProxySearchRoute: typeof ApiV1ProxySearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +310,13 @@ declare module '@tanstack/react-router' {
       path: '/console'
       fullPath: '/console'
       preLoaderRoute: typeof ConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cover': {
+      id: '/cover'
+      path: '/cover'
+      fullPath: '/cover'
+      preLoaderRoute: typeof CoverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deploy': {
@@ -329,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1CatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/economics': {
+      id: '/api/v1/economics'
+      path: '/api/v1/economics'
+      fullPath: '/api/v1/economics'
+      preLoaderRoute: typeof ApiV1EconomicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/health': {
       id: '/api/v1/health'
       path: '/api/v1/health'
@@ -371,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ProxyScrapeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/proxy/search': {
+      id: '/api/v1/proxy/search'
+      path: '/api/v1/proxy/search'
+      fullPath: '/api/v1/proxy/search'
+      preLoaderRoute: typeof ApiV1ProxySearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -388,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CatalogRoute: CatalogRoute,
   ConsoleRoute: ConsoleRoute,
+  CoverRoute: CoverRoute,
   DeployRoute: DeployRoute,
   IntegrateRoute: IntegrateRoute,
   LedgerRoute: LedgerRoute,
@@ -395,12 +456,14 @@ const rootRouteChildren: RootRouteChildren = {
   TreasuryRoute: TreasuryRoute,
   DotwellKnownMcpRoute: DotwellKnownMcpRoute,
   ApiV1CatalogRoute: ApiV1CatalogRoute,
+  ApiV1EconomicsRoute: ApiV1EconomicsRoute,
   ApiV1HealthRoute: ApiV1HealthRoute,
   ApiV1SettlementsRoute: ApiV1SettlementsRoute,
   ApiV1TreasuryRoute: ApiV1TreasuryRoute,
   ApiV1ProxyMapRoute: ApiV1ProxyMapRoute,
   ApiV1ProxyQuoteRoute: ApiV1ProxyQuoteRoute,
   ApiV1ProxyScrapeRoute: ApiV1ProxyScrapeRoute,
+  ApiV1ProxySearchRoute: ApiV1ProxySearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

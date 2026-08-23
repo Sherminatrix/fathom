@@ -1,6 +1,6 @@
 # Fathom
 
-XRP-settled API marketplace for autonomous agents. Pay 0.005 XRP or RLUSD per call on XRPL Mainnet. Master provider keys stay on the server.
+XRP-settled API marketplace for autonomous agents. USD floors (scrape $0.02, search $0.03, map $0.12, quote $0.01) paid in live XRP or RLUSD. Master provider keys stay on the server.
 
 Treasury: `rkpckEddjHhS2vvg7sR3Gb3BX3CVzE2kb`
 

@@ -12,13 +12,23 @@ const TOOLS = [
     title: "Web scrape",
     summary: "Extract markdown from a public URL through the curated scrape provider.",
     fields: "url, formats[]",
+    price: "$0.02",
+  },
+  {
+    name: "web_search",
+    path: "/api/v1/proxy/search",
+    title: "Web search",
+    summary: "Live web search via Firecrawl. Up to 10 results, no full-page scrape of hits.",
+    fields: "query, limit?",
+    price: "$0.03",
   },
   {
     name: "web_map",
     path: "/api/v1/proxy/map",
     title: "Site map",
-    summary: "List public URLs on a domain via Firecrawl Map.",
+    summary: "List up to 10 public URLs on a domain via Firecrawl Map.",
     fields: "url, search?, limit?",
+    price: "$0.12",
   },
   {
     name: "market_quote",
@@ -26,6 +36,7 @@ const TOOLS = [
     title: "Market quote",
     summary: "Last-sale quote for XRP, RLUSD, and major symbols via the curated data vendor.",
     fields: "symbol",
+    price: "$0.01",
   },
 ];
 
@@ -34,9 +45,9 @@ function CatalogPage() {
     <SiteShell>
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
         <Badge>Catalog</Badge>
-        <h1 className="font-display mt-4 text-4xl tracking-tight sm:text-5xl">Three tools. One price.</h1>
+        <h1 className="font-display mt-4 text-4xl tracking-tight sm:text-5xl">Four tools. USD floors, live XRP.</h1>
         <p className="mt-4 max-w-xl text-muted">
-          Every call costs 0.005 XRP or 0.005 RLUSD, verified on mainnet before the upstream request is made.
+          Each SKU has a dollar floor so Firecrawl credits stay covered when XRP moves. Agents pay that floor in XRP at the live print, or the same amount in RLUSD.
         </p>
 
         <div className="mt-10 overflow-hidden rounded-xl shadow-[var(--shadow-border)]">
@@ -58,7 +69,7 @@ function CatalogPage() {
                   </td>
                   <td className="hidden px-4 py-4 font-mono text-xs text-muted sm:table-cell">{tool.path}</td>
                   <td className="hidden px-4 py-4 font-mono text-xs text-muted md:table-cell">{tool.fields}</td>
-                  <td className="px-4 py-4 font-mono text-xs tabular-nums">0.005 XRP</td>
+                  <td className="px-4 py-4 font-mono text-xs tabular-nums">{tool.price}</td>
                 </tr>
               ))}
             </tbody>

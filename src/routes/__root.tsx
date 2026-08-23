@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "XRP-settled API marketplace for autonomous agents. Pay 0.005 XRP or RLUSD per call. Master keys never leave the server.",
+          "XRP-settled API marketplace for autonomous agents. Cover depends on the tool. Master keys never leave the server.",
       },
       { name: "theme-color", content: "#09090B" },
     ],

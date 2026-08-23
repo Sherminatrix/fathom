@@ -1,7 +1,13 @@
 export const MARKET = {
   name: "Fathom",
-  minXrp: "0.005",
-  minRlusd: "0.005",
+  minXrp: "0.01",
+  minRlusd: "0.01",
+  prices: {
+    scrape: "0.015",
+    map: "0.05",
+    search: "0.03",
+    quote: "0.01",
+  },
   txHeader: "x-xrpl-tx-hash",
   senderHeader: "x-xrpl-sender",
   network: "XRPL Mainnet",
@@ -14,6 +20,7 @@ export const NAV = [
   { to: "/catalog", label: "Catalog" },
   { to: "/integrate", label: "Integrate" },
   { to: "/treasury", label: "Treasury" },
+  { to: "/cover", label: "Cover" },
   { to: "/ledger", label: "Ledger" },
   { to: "/mcp", label: "MCP" },
   { to: "/console", label: "Console" },

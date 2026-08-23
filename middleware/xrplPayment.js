@@ -21,8 +21,8 @@
  *  6. Confirm `TransactionType === "Payment"`.
  *  7. Confirm `Destination` equals PLATFORM_XRPL_WALLET_ADDRESS.
  *  8. Confirm `Account` (the paying wallet) equals the declared sender header.
- *  9. Read `delivered_amount` (fallback: `Amount`) and require at least
- *     0.005 XRP (5_000 drops) or 0.005 RLUSD.
+ *  9. Read `delivered_amount` (fallback: `Amount`) and require the tool's cover
+ *     (scrape 0.015 XRP, search 0.03, map 0.05, quote 0.01 — or the same in RLUSD).
  * 10. Only after every check passes, insert the hash into the settlement log
  *     (primary key = replay lock) and attach a receipt onto the request.
  *
@@ -34,12 +34,12 @@
 import axios from "axios";
 import { Client, dropsToXrp, isValidClassicAddress } from "xrpl";
 import { consumeSettlement, hasConsumed, memorySize } from "../lib/settlements.js";
+import { TOOL_PRICES } from "../lib/pricing.js";
+import { livePriceForPath } from "../lib/economics.js";
 
-/** 0.005 XRP, expressed in drops (1 XRP = 1_000_000 drops). */
-export const MIN_XRP_DROPS = 5_000n;
-
-/** Equivalent RLUSD threshold — 0.005 of the issued stablecoin. */
-export const MIN_RLUSD = 0.005;
+/** Lowest listed cover (quote). Tool-specific floors live in lib/pricing.js. */
+export const MIN_XRP_DROPS = TOOL_PRICES.quote.drops;
+export const MIN_RLUSD = Number(TOOL_PRICES.quote.rlusd);
 
 /** Official RLUSD issued-currency hex (ASCII "RLUSD" padded to 160 bits). */
 export const RLUSD_HEX = "524C555344000000000000000000000000000000";
@@ -163,7 +163,7 @@ function normalizeHash(hash) {
   return String(hash || "").trim().toLowerCase();
 }
 
-function paymentRequired(code, message, extra = {}) {
+function paymentRequired(code, message, extra = {}, price = TOOL_PRICES.scrape) {
   return {
     ok: false,
     status: 402,
@@ -173,7 +173,14 @@ function paymentRequired(code, message, extra = {}) {
       message,
       settle: {
         destination: getTreasuryAddress() || null,
-        min: { xrp: "0.005", rlusd: "0.005" },
+        min: {
+          usd: price.usd,
+          xrp: price.xrp,
+          rlusd: price.rlusd,
+          drops: price.drops.toString(),
+          tool: price.id,
+          spotUsd: price.spotUsd,
+        },
         headers: ["x-xrpl-tx-hash", "x-xrpl-sender"],
       },
       ...extra,
@@ -198,13 +205,13 @@ function decodeCurrency(code) {
  * Decide whether a Payment amount (drops string or issued-currency object)
  * clears the marketplace minimum.
  */
-export function meetsMinimumFee(amount) {
+export function meetsMinimumFee(amount, minDrops = MIN_XRP_DROPS, minRlusd = MIN_RLUSD) {
   if (amount == null) return { ok: false, reason: "missing_amount" };
 
   if (typeof amount === "string" || typeof amount === "number") {
     try {
       const drops = BigInt(String(amount).split(".")[0]);
-      if (drops >= MIN_XRP_DROPS) {
+      if (drops >= minDrops) {
         return {
           ok: true,
           currency: "XRP",
@@ -216,7 +223,7 @@ export function meetsMinimumFee(amount) {
         ok: false,
         reason: "insufficient_xrp",
         drops: drops.toString(),
-        needDrops: MIN_XRP_DROPS.toString(),
+        needDrops: minDrops.toString(),
       };
     } catch {
       return { ok: false, reason: "malformed_drops" };
@@ -228,10 +235,10 @@ export function meetsMinimumFee(amount) {
     const value = Number.parseFloat(amount.value);
     if (!Number.isFinite(value)) return { ok: false, reason: "malformed_iou_value" };
     if (currency === "RLUSD") {
-      if (value + Number.EPSILON >= MIN_RLUSD) {
+      if (value + Number.EPSILON >= minRlusd) {
         return { ok: true, currency: "RLUSD", value: String(value), issuer: amount.issuer };
       }
-      return { ok: false, reason: "insufficient_rlusd", value: String(value), need: String(MIN_RLUSD) };
+      return { ok: false, reason: "insufficient_rlusd", value: String(value), need: String(minRlusd) };
     }
     return { ok: false, reason: "unsupported_currency", currency };
   }
@@ -296,11 +303,14 @@ async function fetchTxFromJsonRpc(txHash) {
 export async function verifyXrplPayment(input) {
   const txHash = String(input?.txHash || "").trim();
   const senderAddress = String(input?.senderAddress || "").trim();
+  const price = await livePriceForPath(input?.path);
 
   if (!txHash || !senderAddress) {
     return paymentRequired(
       "MISSING_HEADERS",
-      "Send x-xrpl-tx-hash and x-xrpl-sender. Pay 0.005 XRP (or RLUSD) to the platform wallet first.",
+      `Send x-xrpl-tx-hash and x-xrpl-sender. Pay ${price.xrp} XRP ($${price.usd} at the live print) or ${price.rlusd} RLUSD.`,
+      {},
+      price,
     );
   }
 
@@ -417,12 +427,13 @@ export async function verifyXrplPayment(input) {
   }
 
   const delivered = meta.delivered_amount ?? meta.DeliveredAmount ?? tx.DeliverMax ?? tx.Amount;
-  const feeCheck = meetsMinimumFee(delivered);
+  const feeCheck = meetsMinimumFee(delivered, price.drops, Number(price.rlusd));
   if (!feeCheck.ok) {
     return paymentRequired(
       "INSUFFICIENT_AMOUNT",
-      "Delivered amount is below the 0.005 XRP / 0.005 RLUSD threshold.",
+      `Delivered amount is below $${price.usd} (${price.xrp} XRP at the live print, or ${price.rlusd} RLUSD) for ${price.id}.`,
       { detail: feeCheck },
+      price,
     );
   }
 

@@ -19,6 +19,7 @@ import { Route as LedgerRouteImport } from './routes/ledger'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as DotwellKnownMcpRouteImport } from './routes/[.]well-known/mcp'
+import { Route as DotwellKnownMcpDotjsonRouteImport } from './routes/[.]well-known/mcp[.]json'
 import { Route as McpSchemaRouteImport } from './routes/mcp.schema'
 import { Route as ApiV1CatalogRouteImport } from './routes/api/v1/catalog'
 import { Route as ApiV1EconomicsRouteImport } from './routes/api/v1/economics'
@@ -78,6 +79,11 @@ const TreasuryRoute = TreasuryRouteImport.update({
 const DotwellKnownMcpRoute = DotwellKnownMcpRouteImport.update({
   id: '/.well-known/mcp',
   path: '/.well-known/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownMcpDotjsonRoute = DotwellKnownMcpDotjsonRouteImport.update({
+  id: '/.well-known/mcp.json',
+  path: '/.well-known/mcp.json',
   getParentRoute: () => rootRouteImport,
 } as any)
 const McpSchemaRoute = McpSchemaRouteImport.update({
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRouteWithChildren
   '/treasury': typeof TreasuryRoute
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
+  '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/economics': typeof ApiV1EconomicsRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRouteWithChildren
   '/treasury': typeof TreasuryRoute
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
+  '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/economics': typeof ApiV1EconomicsRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRouteWithChildren
   '/treasury': typeof TreasuryRoute
   '/.well-known/mcp': typeof DotwellKnownMcpRoute
+  '/.well-known/mcp.json': typeof DotwellKnownMcpDotjsonRoute
   '/mcp/schema': typeof McpSchemaRoute
   '/api/v1/catalog': typeof ApiV1CatalogRoute
   '/api/v1/economics': typeof ApiV1EconomicsRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/treasury'
     | '/.well-known/mcp'
+    | '/.well-known/mcp.json'
     | '/mcp/schema'
     | '/api/v1/catalog'
     | '/api/v1/economics'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/treasury'
     | '/.well-known/mcp'
+    | '/.well-known/mcp.json'
     | '/mcp/schema'
     | '/api/v1/catalog'
     | '/api/v1/economics'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/treasury'
     | '/.well-known/mcp'
+    | '/.well-known/mcp.json'
     | '/mcp/schema'
     | '/api/v1/catalog'
     | '/api/v1/economics'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRouteWithChildren
   TreasuryRoute: typeof TreasuryRoute
   DotwellKnownMcpRoute: typeof DotwellKnownMcpRoute
+  DotwellKnownMcpDotjsonRoute: typeof DotwellKnownMcpDotjsonRoute
   ApiV1CatalogRoute: typeof ApiV1CatalogRoute
   ApiV1EconomicsRoute: typeof ApiV1EconomicsRoute
   ApiV1HealthRoute: typeof ApiV1HealthRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/.well-known/mcp'
       fullPath: '/.well-known/mcp'
       preLoaderRoute: typeof DotwellKnownMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/mcp.json': {
+      id: '/.well-known/mcp.json'
+      path: '/.well-known/mcp.json'
+      fullPath: '/.well-known/mcp.json'
+      preLoaderRoute: typeof DotwellKnownMcpDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mcp/schema': {
@@ -455,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRouteWithChildren,
   TreasuryRoute: TreasuryRoute,
   DotwellKnownMcpRoute: DotwellKnownMcpRoute,
+  DotwellKnownMcpDotjsonRoute: DotwellKnownMcpDotjsonRoute,
   ApiV1CatalogRoute: ApiV1CatalogRoute,
   ApiV1EconomicsRoute: ApiV1EconomicsRoute,
   ApiV1HealthRoute: ApiV1HealthRoute,

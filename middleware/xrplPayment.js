@@ -34,8 +34,10 @@
 import axios from "axios";
 import { Client, dropsToXrp, isValidClassicAddress } from "xrpl";
 import { consumeSettlement, hasConsumed, memorySize } from "../lib/settlements.js";
-import { TOOL_PRICES } from "../lib/pricing.js";
+import { TOOL_PRICES, priceJson } from "../lib/pricing.js";
 import { livePriceForPath } from "../lib/economics.js";
+import { inspectUsdcPayment, isEvmTxHash } from "../lib/baseUsdc.js";
+import { extractPaymentProof, x402Accepts, encodePaymentRequired, paymentResponseHeader } from "../lib/x402.js";
 
 /** Lowest listed cover (quote). Tool-specific floors live in lib/pricing.js. */
 export const MIN_XRP_DROPS = TOOL_PRICES.quote.drops;
@@ -163,25 +165,38 @@ function normalizeHash(hash) {
   return String(hash || "").trim().toLowerCase();
 }
 
-function paymentRequired(code, message, extra = {}, price = TOOL_PRICES.scrape) {
+function paymentRequired(code, message, extra = {}, price = TOOL_PRICES.scrape, path = "/") {
+  const quote = priceJson(price);
+  const destination = getTreasuryAddress() || null;
+  const accepts = x402Accepts(price, { path, destination });
+  const x402 = {
+    x402Version: 1,
+    error: message,
+    accepts,
+  };
   return {
     ok: false,
     status: 402,
+    headers: {
+      "PAYMENT-REQUIRED": encodePaymentRequired(x402),
+      "Cache-Control": "no-store",
+    },
     body: {
       error: "Payment Required",
       code,
       message,
+      x402Version: 1,
+      accepts,
       settle: {
-        destination: getTreasuryAddress() || null,
-        min: {
-          usd: price.usd,
-          xrp: price.xrp,
-          rlusd: price.rlusd,
-          drops: price.drops.toString(),
-          tool: price.id,
-          spotUsd: price.spotUsd,
-        },
-        headers: ["x-xrpl-tx-hash", "x-xrpl-sender"],
+        preferred: "RLUSD",
+        destination,
+        min: quote,
+        next: [
+          "Pay RLUSD (preferred) or pay_at_least_drops of XRP to destination.",
+          "Retry this same request with X-PAYMENT: base64 { payload: { txHash } }.",
+          "x-xrpl-tx-hash still works. x-xrpl-sender is optional.",
+        ],
+        headers: ["X-PAYMENT", "x-xrpl-tx-hash"],
       },
       ...extra,
     },
@@ -298,26 +313,27 @@ async function fetchTxFromJsonRpc(txHash) {
  * Core verifier used by both the Express middleware and the dashboard's
  * isomorphic API routes. Never throws for expected payment failures.
  *
- * @param {{ txHash?: string | null, senderAddress?: string | null, path?: string, method?: string }} input
+ * @param {{ txHash?: string | null, senderAddress?: string | null, path?: string, method?: string, headers?: unknown }} input
  */
 export async function verifyXrplPayment(input) {
-  const txHash = String(input?.txHash || "").trim();
-  const senderAddress = String(input?.senderAddress || "").trim();
-  const price = await livePriceForPath(input?.path);
+  const path = input?.path || "/";
+  const fromHeaders = input?.headers ? extractPaymentProof(input.headers) : { txHash: "", senderAddress: "" };
+  const txHash = String(input?.txHash || fromHeaders.txHash || "").trim();
+  let senderAddress = String(input?.senderAddress || fromHeaders.senderAddress || "").trim();
+  const price = await livePriceForPath(path);
+  const fail = (code, message, extra = {}) => paymentRequired(code, message, extra, price, path);
 
-  if (!txHash || !senderAddress) {
-    return paymentRequired(
+  if (!txHash) {
+    return fail(
       "MISSING_HEADERS",
-      `Send x-xrpl-tx-hash and x-xrpl-sender. Pay ${price.xrp} XRP ($${price.usd} at the live print) or ${price.rlusd} RLUSD.`,
-      {},
-      price,
+      `Payment required. Prefer ${price.rlusd} RLUSD, or at least ${priceJson(price).or.pay_at_least_xrp} XRP. Retry with X-PAYMENT (txHash) or x-xrpl-tx-hash. Sender header is optional.`,
     );
   }
 
   const demoEnabled = process.env.ALLOW_DEMO_PAYMENTS === "true";
   if (normalizeHash(txHash) === "demo") {
     if (!demoEnabled) {
-      return paymentRequired(
+      return fail(
         "DEMO_DISABLED",
         "Demo settlements are disabled. Submit a real validated Payment hash from XRPL Mainnet.",
       );
@@ -336,11 +352,78 @@ export async function verifyXrplPayment(input) {
   }
 
   if (await hasConsumed(txHash)) {
-    return paymentRequired(
+    return fail(
       "REPLAY",
       "This transaction hash has already been consumed. Submit a new Payment.",
       { txHash },
     );
+  }
+
+  if (isEvmTxHash(txHash)) {
+    const inspected = await inspectUsdcPayment(txHash, Number(price.usd || price.rlusd));
+    if (inspected.code === "LEDGER_UNREACHABLE" || inspected.code === "NO_BASE_WALLET") {
+      return {
+        ok: false,
+        status: 503,
+        body: {
+          error: "Base USDC unavailable",
+          code: inspected.code,
+          message:
+            inspected.code === "NO_BASE_WALLET"
+              ? "PLATFORM_BASE_WALLET_ADDRESS is not set."
+              : "Could not reach Base RPC. Retry in a moment.",
+        },
+      };
+    }
+    if (!inspected.ok) {
+      return fail(
+        inspected.code || "NOT_FOUND",
+        inspected.message || "Base USDC payment could not be verified.",
+        inspected,
+      );
+    }
+    const destination = inspected.to;
+    senderAddress = inspected.from;
+    let consumed;
+    try {
+      consumed = await consumeSettlement({
+        txHash,
+        sender: senderAddress || "0x",
+        destination,
+        currency: "USDC",
+        amount: String(inspected.usd),
+        drops: inspected.amountAtomic,
+        demo: false,
+        tool: path,
+      });
+    } catch (err) {
+      console.error("[fathom] settlement log write failed", err);
+      return {
+        ok: false,
+        status: 503,
+        body: {
+          error: "Settlement log unavailable",
+          code: "LEDGER_UNAVAILABLE",
+          message: "Could not record the payment ticket. Retry in a moment — the hash was not consumed.",
+        },
+      };
+    }
+    if (!consumed.ok) {
+      return fail("REPLAY", "This transaction hash has already been consumed. Submit a new Payment.", { txHash });
+    }
+    replayDb.add(normalizeHash(txHash));
+    return {
+      ok: true,
+      settlement: {
+        demo: false,
+        txHash,
+        sender: senderAddress,
+        destination,
+        currency: "USDC",
+        value: String(inspected.usd),
+        network: "base",
+      },
+    };
   }
 
   const destination = getTreasuryAddress();
@@ -356,8 +439,8 @@ export async function verifyXrplPayment(input) {
     };
   }
 
-  if (!isValidClassicAddress(senderAddress)) {
-    return paymentRequired("INVALID_SENDER", "x-xrpl-sender must be a classic XRPL address (r...).");
+  if (senderAddress && !isValidClassicAddress(senderAddress)) {
+    return fail("INVALID_SENDER", "x-xrpl-sender must be a classic XRPL address (r...) if provided.");
   }
 
   let result;
@@ -370,7 +453,7 @@ export async function verifyXrplPayment(input) {
   } catch (err) {
     const notFound = /txnNotFound|transactionNotFound|actNotFound/i.test(String(err?.code || err?.message || ""));
     if (notFound) {
-      return paymentRequired("NOT_FOUND", "No transaction with that hash exists on XRPL Mainnet.", { txHash });
+      return fail("NOT_FOUND", "No transaction with that hash exists on XRPL Mainnet.", { txHash });
     }
     return {
       ok: false,
@@ -386,7 +469,7 @@ export async function verifyXrplPayment(input) {
   const { tx, meta, hash, validated } = pickTxFields(result);
 
   if (!validated) {
-    return paymentRequired(
+    return fail(
       "NOT_VALIDATED",
       "Transaction is not in a validated ledger yet. Wait for tesSUCCESS on mainnet, then retry.",
       { txHash: hash || txHash },
@@ -395,7 +478,7 @@ export async function verifyXrplPayment(input) {
 
   const engineResult = meta?.TransactionResult;
   if (engineResult && engineResult !== "tesSUCCESS") {
-    return paymentRequired(
+    return fail(
       "NOT_SUCCESS",
       `Transaction engine result was ${engineResult}, not tesSUCCESS.`,
       { txHash: hash || txHash, engineResult },
@@ -403,7 +486,7 @@ export async function verifyXrplPayment(input) {
   }
 
   if (tx?.TransactionType !== "Payment") {
-    return paymentRequired(
+    return fail(
       "NOT_PAYMENT",
       `Transaction type is ${tx?.TransactionType || "unknown"}, expected Payment.`,
       { txHash: hash || txHash },
@@ -411,29 +494,29 @@ export async function verifyXrplPayment(input) {
   }
 
   if (tx.Destination !== destination) {
-    return paymentRequired(
+    return fail(
       "WRONG_DESTINATION",
       "Payment Destination does not match the Fathom treasury address.",
       { expected: destination, actual: tx.Destination },
     );
   }
 
-  if (tx.Account !== senderAddress) {
-    return paymentRequired(
+  if (senderAddress && tx.Account !== senderAddress) {
+    return fail(
       "WRONG_SENDER",
-      "Payment Account does not match x-xrpl-sender. The paying wallet must identify itself.",
+      "Payment Account does not match x-xrpl-sender.",
       { expected: senderAddress, actual: tx.Account },
     );
   }
+  senderAddress = tx.Account;
 
   const delivered = meta.delivered_amount ?? meta.DeliveredAmount ?? tx.DeliverMax ?? tx.Amount;
   const feeCheck = meetsMinimumFee(delivered, price.drops, Number(price.rlusd));
   if (!feeCheck.ok) {
-    return paymentRequired(
+    return fail(
       "INSUFFICIENT_AMOUNT",
       `Delivered amount is below $${price.usd} (${price.xrp} XRP at the live print, or ${price.rlusd} RLUSD) for ${price.id}.`,
       { detail: feeCheck },
-      price,
     );
   }
 
@@ -464,7 +547,7 @@ export async function verifyXrplPayment(input) {
     };
   }
   if (!consumed.ok) {
-    return paymentRequired("REPLAY", "This transaction hash has already been consumed. Submit a new Payment.", {
+    return fail("REPLAY", "This transaction hash has already been consumed. Submit a new Payment.", {
       txHash: hash || txHash,
     });
   }
@@ -495,22 +578,22 @@ export function xrplPayment(req, res, next) {
     next();
     return;
   }
-  const txHash = req.get("x-xrpl-tx-hash");
-  const senderAddress = req.get("x-xrpl-sender");
-
   verifyXrplPayment({
-    txHash,
-    senderAddress,
-    path: req.path,
+    headers: req.headers,
+    path: req.originalUrl?.split("?")[0] || req.path,
     method: req.method,
   })
     .then((outcome) => {
       if (!outcome.ok) {
+        if (outcome.headers) {
+          for (const [k, v] of Object.entries(outcome.headers)) res.set(k, v);
+        }
         return res.status(outcome.status).json(outcome.body);
       }
       req.settlement = outcome.settlement;
       res.setHeader("x-fathom-settlement", outcome.settlement.demo ? "demo" : "validated");
       res.setHeader("x-fathom-tx-hash", outcome.settlement.txHash);
+      res.setHeader("X-PAYMENT-RESPONSE", paymentResponseHeader(outcome.settlement));
       next();
     })
     .catch((err) => {

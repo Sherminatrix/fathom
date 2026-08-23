@@ -1,0 +1,33 @@
+# Fathom — AI Agent API Proxy Marketplace
+# Copy to your host environment. Do not commit real keys.
+
+# Standalone Express bind (the dashboard preview uses its own host process).
+PORT=8080
+
+# Classic XRPL address that receives agent micro-payments (destination).
+# Xaman: copy the r-address (not an X-address, seed, or secret).
+PLATFORM_XRPL_WALLET_ADDRESS=rkpckEddjHhS2vvg7sR3Gb3BX3CVzE2kb
+
+# Optional. Base (Ethereum L2) address that receives USDC x402 payments.
+# Public 0x receive address only — never a private key. titanking1.cb.id
+PLATFORM_BASE_WALLET_ADDRESS=0x584c004037bC369b3B49bd18381A5a6d0C1c1215
+# BASE_RPC_URL=https://mainnet.base.org
+
+# Master key injected server-side into curated upstream providers.
+# Never forwarded to agents.
+ORIGINAL_PROVIDER_API_KEY=fc-your-firecrawl-or-provider-key
+
+# Optional. Default is Firecrawl-compatible scrape. Leave empty to use the built-in mock provider.
+# TARGET_SCRAPE_API_URL=https://api.firecrawl.dev/v1/scrape
+# TARGET_QUOTE_API_URL=https://api.twelvedata.com/quote
+
+# Optional. Same public cluster as https://xrplcluster.com, WebSocket endpoint for xrpl.Client.
+# XRPL_WS_URL=wss://xrplcluster.com
+# XRPL_RPC_URL=https://xrplcluster.com
+
+# Assumed Firecrawl USD per credit for the Cover monitor (Hobby-like default 0.006).
+# FIRECRAWL_USD_PER_CREDIT=0.006
+
+# Render: NITRO_PRESET=node-server and NODE_VERSION=22 on the web service.
+# DATABASE_URL is the Render Postgres Internal URL (durable replay).
+# NITRO_PRESET=node-server

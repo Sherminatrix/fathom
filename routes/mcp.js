@@ -10,6 +10,7 @@ import { getTreasuryAddress, MIN_RLUSD, MIN_XRP_DROPS, replayDb } from "../middl
 import { countSettlements } from "../lib/settlements.js";
 import { priceJson, TOOL_PRICES } from "../lib/pricing.js";
 import { getEconomics } from "../lib/economics.js";
+import { getBasePayTo } from "../lib/baseUsdc.js";
 
 export const TOOLS = [
   {
@@ -127,6 +128,13 @@ export async function getHealth() {
     durableReplay: true,
     tools: TOOLS.map((t) => t.name),
     cover,
+    base: {
+      payTo: getBasePayTo(),
+      ens: getBasePayTo() ? "titanking1.cb.id" : null,
+      asset: "USDC",
+      chain: "base",
+      usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    },
   };
 }
 
@@ -151,15 +159,17 @@ export async function buildMcpSchema() {
     name: "fathom",
     title: "Fathom",
     description:
-      "XRP-settled reverse proxy. Each tool has a USD floor, paid in live XRP drops or RLUSD. GET /api/v1/economics for the current XRP amount.",
+      "HTTP MCP tools with a USD floor. Prefer RLUSD (1:1). XRP is accepted at the live print; use pay_at_least_drops. One GET /.well-known/mcp is enough.",
     transport: { type: "http", encoding: "json" },
     settlement: {
       ledger: "xrpl",
       network: "mainnet",
       destination,
+      preferred: "RLUSD",
       amount: {
-        note: "USD floor converted to XRP at the live print. See tools[].annotations.price and GET /api/v1/economics.",
-        quote: "GET /api/v1/economics",
+        note: "Pay tools[].annotations.price in RLUSD (preferred) or XRP pay_at_least_drops. Do not call /api/v1/economics first.",
+        discovery: "GET /.well-known/mcp",
+        cache_s: 30,
       },
       headers: {
         "x-xrpl-tx-hash": {
@@ -172,25 +182,23 @@ export async function buildMcpSchema() {
         },
       },
       flow: [
-        "GET /api/v1/economics for the live XRP drops (or pay the USD floor in RLUSD).",
-        "Submit a Payment to the destination. Wait for tesSUCCESS.",
-        "Call a tool path with x-xrpl-tx-hash and x-xrpl-sender.",
-        "Fathom verifies destination, sender, amount, and consumes the hash (replay-safe).",
-        "The upstream response is returned raw. The master provider key is never exposed.",
+        "POST the tool path with the JSON body. No account.",
+        "On 402, read accepts[]: USDC on Base if listed, else RLUSD, else XRP pay_at_least_drops.",
+        "Pay the treasury, then retry the same POST with header X-PAYMENT: base64({payload:{txHash}}).",
+        "x-xrpl-tx-hash still works. x-xrpl-sender is optional (Account is read from the Payment).",
+        "Do not retry a consumed hash. Master keys never leave the server.",
       ],
     },
     tools: TOOLS.map((tool) => {
       const id = idByName[tool.name] || "scrape";
       const row = live[id];
       const price = row
-        ? {
-            usd: row.usdFloor,
-            amount: row.coverXrp,
-            currency: "XRP",
+        ? priceJson({
+            xrp: row.coverXrp,
             drops: row.liveDrops,
-            or: { amount: row.coverRlusd, currency: "RLUSD" },
-            quote: "GET /api/v1/economics",
-          }
+            rlusd: row.coverRlusd,
+            usd: row.usdFloor,
+          })
         : tool.price;
       return {
         name: tool.name,
@@ -204,14 +212,14 @@ export async function buildMcpSchema() {
             path: tool.path,
             headers: {
               "Content-Type": "application/json",
-              "x-xrpl-tx-hash": "<validated payment hash>",
-              "x-xrpl-sender": "<paying classic address>",
+              "X-PAYMENT": "base64 { payload: { txHash } }",
             },
           },
         },
       };
     }),
     resources: [
+      { uri: "fathom://mcp", name: "MCP", mimeType: "application/json", path: "/.well-known/mcp" },
       { uri: "fathom://health", name: "Health", mimeType: "application/json", path: "/api/v1/health" },
       { uri: "fathom://catalog", name: "Catalog", mimeType: "application/json", path: "/api/v1/catalog" },
       { uri: "fathom://economics", name: "Cover", mimeType: "application/json", path: "/api/v1/economics" },
@@ -222,9 +230,11 @@ export async function buildMcpSchema() {
 export function mcpRouter() {
   const router = Router();
   router.get("/", async (_req, res) => {
+    res.set("Cache-Control", "public, max-age=30");
     res.json(await buildMcpSchema());
   });
   router.get("/schema", async (_req, res) => {
+    res.set("Cache-Control", "public, max-age=30");
     res.json(await buildMcpSchema());
   });
   return router;

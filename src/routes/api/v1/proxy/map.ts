@@ -5,6 +5,7 @@ import {
   jsonResponse,
   mapUsage,
   requirePayment,
+  settlementHeaders,
 } from "@/lib/gateway";
 
 export const Route = createFileRoute("/api/v1/proxy/map")({
@@ -14,14 +15,11 @@ export const Route = createFileRoute("/api/v1/proxy/map")({
       GET: () => jsonResponse(mapUsage, 405),
       POST: async ({ request }) => {
         const paid = await requirePayment(request);
-        if (!paid.ok) return jsonResponse(paid.body, paid.status);
+        if (!paid.ok) return jsonResponse(paid.body, paid.status, paid.headers);
         try {
           const body = await request.json().catch(() => ({}));
           const data = await handleMap(body);
-          return jsonResponse(data, 200, {
-            "x-fathom-settlement": paid.settlement.demo ? "demo" : "validated",
-            "x-fathom-tx-hash": paid.settlement.txHash,
-          });
+          return jsonResponse(data, 200, settlementHeaders(paid.settlement));
         } catch (err) {
           const status = (err as { status?: number }).status || 502;
           return jsonResponse(

@@ -70,8 +70,9 @@ function fathomApiPlugin(): Plugin {
         const pathOnly = (req.url ?? "").split("?", 1)[0] ?? "";
         const isApi =
           pathOnly.startsWith("/api") ||
-          pathOnly === "/mcp/schema" ||
-          pathOnly === "/.well-known/mcp";
+          pathOnly.startsWith("/mcp") ||
+          pathOnly === "/.well-known/mcp" ||
+          pathOnly === "/.well-known/mcp.json";
         if (!isApi) {
           next();
           return;
